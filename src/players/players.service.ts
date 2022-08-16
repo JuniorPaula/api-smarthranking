@@ -9,7 +9,13 @@ export class PlayersService {
   private players: Player[] = [];
 
   async createAndUpdatePlayer(createPlayerDto: CreatePlayerDTO): Promise<void> {
-    this.create(createPlayerDto);
+    const { email } = createPlayerDto;
+    const player = this.players.find((player) => player.email === email);
+    if (player) {
+      this.update(player, createPlayerDto);
+    } else {
+      this.create(createPlayerDto);
+    }
   }
 
   async findAllPlayers(): Promise<Player[]> {
@@ -29,5 +35,10 @@ export class PlayersService {
     };
     this.logger.log(`create player: ${JSON.stringify(player)}`);
     this.players.push(player);
+  }
+
+  private update(player: Player, createPlayerDto: CreatePlayerDTO): void {
+    const { name } = createPlayerDto;
+    player.name = name;
   }
 }
