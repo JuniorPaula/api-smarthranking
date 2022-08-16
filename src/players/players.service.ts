@@ -12,6 +12,10 @@ export class PlayersService {
     this.create(createPlayerDto);
   }
 
+  async findAllPlayers(): Promise<Player[]> {
+    return this.players;
+  }
+
   private create(createPlayerDto: CreatePlayerDTO): void {
     const { phoneNumber, email, name } = createPlayerDto;
     const player: Player = {
