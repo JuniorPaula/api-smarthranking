@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   Post,
   UsePipes,
   ValidationPipe,
@@ -15,9 +16,14 @@ export class CategoriesController {
 
   @Post()
   @UsePipes(ValidationPipe)
-  async createCategory(
+  async createHanlde(
     @Body() createCategoryDto: CreateCategoryDTO,
   ): Promise<Category> {
-    return await this.categoriesService.createHanlde(createCategoryDto);
+    return await this.categoriesService.createCategory(createCategoryDto);
+  }
+
+  @Get()
+  async findAllHanlde(): Promise<Category[]> {
+    return await this.categoriesService.findAllCategories();
   }
 }
