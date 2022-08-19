@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Param,
   Post,
   UsePipes,
   ValidationPipe,
@@ -25,5 +26,12 @@ export class CategoriesController {
   @Get()
   async findAllHanlde(): Promise<Category[]> {
     return await this.categoriesService.findAllCategories();
+  }
+
+  @Get('/:category')
+  async loadByCategoryHandle(
+    @Param('category') category: string,
+  ): Promise<Category> {
+    return await this.categoriesService.loadByCategory(category);
   }
 }
