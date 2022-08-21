@@ -87,6 +87,24 @@ export class CategoriesService {
     );
   }
 
+  async findCategoryByPlayer(playerId: any): Promise<Category> {
+    const players = await this.playerService.findAllPlayers();
+
+    const playerFiltered = players.filter(
+      (player) => player._id.toString() === playerId,
+    );
+
+    if (!playerFiltered.length) {
+      throw new NotFoundException('Jogador não encontrado!');
+    }
+
+    return await this.categoryModel
+      .findOne()
+      .where('players')
+      .in(playerId)
+      .exec();
+  }
+
   private async findCategoryIfExists<T>(value: string): Promise<T> {
     return await this.categoryModel.findOne({ category: value });
   }

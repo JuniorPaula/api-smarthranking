@@ -1,4 +1,62 @@
-import { Injectable } from '@nestjs/common';
+import { Model } from 'mongoose';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { PlayersService } from 'src/players/players.service';
+import { CreateChallengeDto } from './dtos/create-challenge.dto';
+import { Challenge } from './interfaces/challenge.interface';
+import { CategoriesService } from 'src/categories/categories.service';
+import { ChallengeStatus } from './interfaces/challenge-status.enum';
 
 @Injectable()
-export class ChallengesService {}
+export class ChallengesService {
+  constructor(
+    @InjectModel('Challenge') private readonly challengeModel: Model<Challenge>,
+    private readonly playerService: PlayersService,
+    private readonly categoryService: CategoriesService,
+  ) {}
+
+  async createChallenge(
+    createChallengeDto: CreateChallengeDto,
+  ): Promise<Challenge> {
+    const players = await this.playerService.findAllPlayers();
+
+    createChallengeDto.players.map((playerDto) => {
+      const playerFiltered = players.filter((player) => {
+        return player._id.toString() === playerDto._id;
+      });
+
+      if (!playerFiltered.length) {
+        throw new BadRequestException('Jogador inválido.');
+      }
+    });
+
+    const requesterPlayerOfMatch = createChallengeDto.players.filter(
+      (player) => {
+        return player._id === createChallengeDto.requester;
+      },
+    );
+
+    if (!requesterPlayerOfMatch.length) {
+      throw new BadRequestException(
+        'O Solicitante deve ser um jogador da partida.',
+      );
+    }
+
+    const playerCategory = await this.categoryService.findCategoryByPlayer(
+      createChallengeDto.requester,
+    );
+
+    if (!playerCategory) {
+      throw new BadRequestException(
+        'O Solicitante deve está registrado em uma categoria',
+      );
+    }
+
+    const newChallenge = new this.challengeModel(createChallengeDto);
+    newChallenge.category = playerCategory.category;
+    newChallenge.dateTimeOfChallenge = new Date();
+    newChallenge.status = ChallengeStatus.PENDENTE;
+
+    return newChallenge.save();
+  }
+}
