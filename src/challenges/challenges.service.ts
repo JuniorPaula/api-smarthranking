@@ -59,4 +59,34 @@ export class ChallengesService {
 
     return newChallenge.save();
   }
+
+  async findAllChallenges(): Promise<Challenge[]> {
+    return await this.challengeModel
+      .find()
+      .populate('requester')
+      .populate('players')
+      .populate('match')
+      .exec();
+  }
+
+  async findChallengeByPlayer(_id: any): Promise<Challenge[]> {
+    const players = await this.playerService.findAllPlayers();
+
+    const playerFiltered = players.filter((player) => {
+      return player._id.toString() === _id;
+    });
+
+    if (!playerFiltered.length) {
+      throw new BadRequestException('Jogador inválido.');
+    }
+
+    return await this.challengeModel
+      .find()
+      .where('players')
+      .in(_id)
+      .populate('requester')
+      .populate('players')
+      .populate('match')
+      .exec();
+  }
 }
