@@ -4,11 +4,13 @@ import {
   Get,
   Param,
   Post,
+  Put,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDTO } from './dtos/create-category.dto';
+import { UpdateCategoryDto } from './dtos/update-category.dto';
 import { Category } from './interfaces/category.interface';
 
 @Controller('/api/v1/categories')
@@ -33,5 +35,19 @@ export class CategoriesController {
     @Param('category') category: string,
   ): Promise<Category> {
     return await this.categoriesService.loadByCategory(category);
+  }
+
+  @Put('/:category')
+  @UsePipes(ValidationPipe)
+  async updateHandle(
+    @Body() updateCategory: UpdateCategoryDto,
+    @Param('category') category: string,
+  ): Promise<void> {
+    await this.categoriesService.updateCategory(category, updateCategory);
+  }
+
+  @Post('/:category/player/:playerId')
+  async assignPlayerCategoryHandle(@Param() params: string[]): Promise<void> {
+    return await this.categoriesService.assignPlayerCategory(params);
   }
 }
