@@ -2,19 +2,22 @@ import { Model } from 'mongoose';
 import {
   BadRequestException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { PlayersService } from 'src/players/players.service';
 import { CreateChallengeDto, UpdateChallengeDto } from './dtos';
-import { Challenge } from './interfaces/challenge.interface';
+import { Challenge, Match } from './interfaces/challenge.interface';
 import { CategoriesService } from 'src/categories/categories.service';
 import { ChallengeStatus } from './interfaces/challenge-status.enum';
+import { SetChallengeByMatchDto } from './dtos/set-challenge-by-match.dto';
 
 @Injectable()
 export class ChallengesService {
   constructor(
     @InjectModel('Challenge') private readonly challengeModel: Model<Challenge>,
+    @InjectModel('Match') private readonly matchModel: Model<Match>,
     private readonly playerService: PlayersService,
     private readonly categoryService: CategoriesService,
   ) {}
@@ -116,5 +119,43 @@ export class ChallengesService {
     await this.challengeModel
       .findOneAndUpdate({ _id: id }, { $set: challengeFinded })
       .exec();
+  }
+
+  async setChallengeByMatch(
+    id: string,
+    setChallengeByMatchDto: SetChallengeByMatchDto,
+  ): Promise<void> {
+    const challengeFinded = await this.challengeModel
+      .findOne({ _id: id })
+      .exec();
+
+    if (!challengeFinded) {
+      throw new NotFoundException(`Desafio ${challengeFinded} não encontrado!`);
+    }
+
+    const playerFiltered = challengeFinded.players.filter(
+      (player) => player._id.toString() === setChallengeByMatchDto.def,
+    );
+
+    if (!playerFiltered.length) {
+      throw new BadRequestException('O Jogador não faz parte do desafio!');
+    }
+
+    const newMatch = new this.matchModel(setChallengeByMatchDto);
+    newMatch.category = challengeFinded.category;
+    newMatch.players = challengeFinded.players;
+
+    const result = await newMatch.save();
+    challengeFinded.status = ChallengeStatus.REALIZADO;
+    challengeFinded.match = result._id;
+
+    try {
+      await this.challengeModel
+        .findOneAndUpdate({ _id: id }, { $set: challengeFinded })
+        .exec();
+    } catch (error) {
+      await this.matchModel.deleteOne({ _id: result._id }).exec();
+      throw new InternalServerErrorException();
+    }
   }
 }

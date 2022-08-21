@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { ChallengesService } from './challenges.service';
 import { UpdateChallengeDto, CreateChallengeDto } from './dtos';
+import { SetChallengeByMatchDto } from './dtos/set-challenge-by-match.dto';
 import { Challenge } from './interfaces/challenge.interface';
 import { ChallengeStatusValidation } from './validations/challenge-status-validation';
 
@@ -43,6 +44,17 @@ export class ChallengesController {
     await this.challengeService.updateChallenge(
       challengeId,
       updateChallengeDto,
+    );
+  }
+
+  @Post('/:challengeId/match')
+  async setChallengeByMatchHandle(
+    @Body(ValidationPipe) setChallengeByMatchDto: SetChallengeByMatchDto,
+    @Param('challengeId') challengeId: string,
+  ): Promise<void> {
+    return await this.challengeService.setChallengeByMatch(
+      challengeId,
+      setChallengeByMatchDto,
     );
   }
 }
