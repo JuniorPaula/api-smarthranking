@@ -101,13 +101,7 @@ export class ChallengesService {
     id: string,
     updateChallengeDto: UpdateChallengeDto,
   ): Promise<void> {
-    const challengeFinded = await this.challengeModel
-      .findOne({ _id: id })
-      .exec();
-
-    if (!challengeFinded) {
-      throw new NotFoundException(`Desafio ${challengeFinded} não encontrado!`);
-    }
+    const challengeFinded = await this.isExistsChallenge(id);
 
     if (updateChallengeDto.status) {
       challengeFinded.dateTimeOfChallenge = new Date();
@@ -125,13 +119,7 @@ export class ChallengesService {
     id: string,
     setChallengeByMatchDto: SetChallengeByMatchDto,
   ): Promise<void> {
-    const challengeFinded = await this.challengeModel
-      .findOne({ _id: id })
-      .exec();
-
-    if (!challengeFinded) {
-      throw new NotFoundException(`Desafio ${challengeFinded} não encontrado!`);
-    }
+    const challengeFinded = await this.isExistsChallenge(id);
 
     const playerFiltered = challengeFinded.players.filter(
       (player) => player._id.toString() === setChallengeByMatchDto.def,
@@ -141,14 +129,10 @@ export class ChallengesService {
       throw new BadRequestException('O Jogador não faz parte do desafio!');
     }
 
-    const newMatch = new this.matchModel(setChallengeByMatchDto);
-    newMatch.category = challengeFinded.category;
-    newMatch.players = challengeFinded.players;
-
-    const result = await newMatch.save();
-    challengeFinded.status = ChallengeStatus.REALIZADO;
-    challengeFinded.match = result._id;
-
+    const result = await this.saveMatch(
+      setChallengeByMatchDto,
+      challengeFinded,
+    );
     try {
       await this.challengeModel
         .findOneAndUpdate({ _id: id }, { $set: challengeFinded })
@@ -160,17 +144,36 @@ export class ChallengesService {
   }
 
   async deleteChallenge(id: string): Promise<void> {
-    const challengeFinded = await this.challengeModel
-      .findOne({ _id: id })
-      .exec();
-
-    if (!challengeFinded) {
-      throw new NotFoundException(`Desafio ${challengeFinded} não encontrado!`);
-    }
+    const challengeFinded = await this.isExistsChallenge(id);
 
     challengeFinded.status = ChallengeStatus.CANCELADO;
     await this.challengeModel
       .findOneAndUpdate({ _id: id }, { $set: challengeFinded })
       .exec();
+  }
+
+  private async isExistsChallenge(id: string): Promise<Challenge> {
+    const challengeFinded = await this.challengeModel
+      .findOne({ _id: id })
+      .exec();
+
+    if (!challengeFinded) {
+      throw new NotFoundException(`Desafio não encontrado!`);
+    }
+    return challengeFinded;
+  }
+
+  private async saveMatch(
+    setChallengeByMatchDto: SetChallengeByMatchDto,
+    challengeFinded: Challenge,
+  ): Promise<Match> {
+    const newMatch = new this.matchModel(setChallengeByMatchDto);
+    newMatch.category = challengeFinded.category;
+    newMatch.players = challengeFinded.players;
+
+    const result = await newMatch.save();
+    challengeFinded.status = ChallengeStatus.REALIZADO;
+    challengeFinded.match = result._id;
+    return result;
   }
 }
