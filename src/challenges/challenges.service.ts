@@ -158,4 +158,19 @@ export class ChallengesService {
       throw new InternalServerErrorException();
     }
   }
+
+  async deleteChallenge(id: string): Promise<void> {
+    const challengeFinded = await this.challengeModel
+      .findOne({ _id: id })
+      .exec();
+
+    if (!challengeFinded) {
+      throw new NotFoundException(`Desafio ${challengeFinded} não encontrado!`);
+    }
+
+    challengeFinded.status = ChallengeStatus.CANCELADO;
+    await this.challengeModel
+      .findOneAndUpdate({ _id: id }, { $set: challengeFinded })
+      .exec();
+  }
 }
