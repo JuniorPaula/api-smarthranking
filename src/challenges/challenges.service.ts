@@ -1,8 +1,12 @@
 import { Model } from 'mongoose';
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { PlayersService } from 'src/players/players.service';
-import { CreateChallengeDto } from './dtos/create-challenge.dto';
+import { CreateChallengeDto, UpdateChallengeDto } from './dtos';
 import { Challenge } from './interfaces/challenge.interface';
 import { CategoriesService } from 'src/categories/categories.service';
 import { ChallengeStatus } from './interfaces/challenge-status.enum';
@@ -87,6 +91,30 @@ export class ChallengesService {
       .populate('requester')
       .populate('players')
       .populate('match')
+      .exec();
+  }
+
+  async updateChallenge(
+    id: string,
+    updateChallengeDto: UpdateChallengeDto,
+  ): Promise<void> {
+    const challengeFinded = await this.challengeModel
+      .findOne({ _id: id })
+      .exec();
+
+    if (!challengeFinded) {
+      throw new NotFoundException(`Desafio ${challengeFinded} não encontrado!`);
+    }
+
+    if (updateChallengeDto.status) {
+      challengeFinded.dateTimeOfChallenge = new Date();
+    }
+    challengeFinded.status = updateChallengeDto.status;
+    challengeFinded.dateTimeOfChallenge =
+      updateChallengeDto.dateTimeOfChallenge;
+
+    await this.challengeModel
+      .findOneAndUpdate({ _id: id }, { $set: challengeFinded })
       .exec();
   }
 }

@@ -2,14 +2,17 @@ import {
   Body,
   Controller,
   Get,
+  Param,
   Post,
+  Put,
   Query,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
 import { ChallengesService } from './challenges.service';
-import { CreateChallengeDto } from './dtos/create-challenge.dto';
+import { UpdateChallengeDto, CreateChallengeDto } from './dtos';
 import { Challenge } from './interfaces/challenge.interface';
+import { ChallengeStatusValidation } from './validations/challenge-status-validation';
 
 @Controller('api/v1/challenges')
 export class ChallengesController {
@@ -30,5 +33,16 @@ export class ChallengesController {
     return _id
       ? await this.challengeService.findChallengeByPlayer(_id)
       : this.challengeService.findAllChallenges();
+  }
+
+  @Put('/:challengeId')
+  async updateChallenge(
+    @Body(ChallengeStatusValidation) updateChallengeDto: UpdateChallengeDto,
+    @Param('challengeId') challengeId: string,
+  ): Promise<void> {
+    await this.challengeService.updateChallenge(
+      challengeId,
+      updateChallengeDto,
+    );
   }
 }
